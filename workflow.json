@@ -1,0 +1,189 @@
+{
+  "name": "Elite Vault Facts - 5 Videos Daily",
+  "nodes": [
+    {
+      "parameters": {
+        "cronExpression": "0 5 * * *"
+      },
+      "name": "Daily Trigger",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "create",
+        "model": "gpt-4o",
+        "messages": {
+          "values": [
+            {
+              "role": "user",
+              "content": "Generate 5 viral Top 10 luxury/facts scripts for YouTube Shorts (60-90s each). Topics: billionaire habits, supercars, private jets, elite secrets. Include engaging narration, hooks, and calls to action. Output as JSON array."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Generate Scripts (OpenAI)",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "openAiApi": "Your OpenAI Key"
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.elevenlabs.io/v1/text-to-speech/YOUR_VOICE_ID",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "xi-api-key",
+              "value": "YOUR_ELEVENLABS_KEY"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{$json.script}}"
+            },
+            {
+              "name": "model_id",
+              "value": "eleven_monolingual_v1"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "name": "TTS Audio (ElevenLabs)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "command": "ffmpeg -i {{$json.audio}} -i {{$json.video_clips}} -vf \"scale=1920:1080,zoompan=z='zoom+0.001':d=100:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)'\" -c:a copy output.mp4"
+      },
+      "name": "Video Montage (FFmpeg)",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.leonardo.ai/v1/generations",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "prompt",
+              "value": "MrBeast style thumbnail: Gold text 'Top 10 Billionaire Secrets' on luxury supercar background, viral YouTube style"
+            }
+          ]
+        }
+      },
+      "name": "Generate Thumbnail",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "operation": "upload",
+        "title": "={{$json.title}}",
+        "description": "Discover elite facts! #Luxury #Top10",
+        "privacyStatus": "public",
+        "additionalFields": {
+          "tags": "luxury facts, billionaire, top 10"
+        }
+      },
+      "name": "Upload to YouTube",
+      "type": "n8n-nodes-base.youtube",
+      "typeVersion": 2,
+      "position": [1340, 300],
+      "credentials": {
+        "youTubeOAuth2Api": "Your YouTube OAuth"
+      }
+    }
+  ],
+  "connections": {
+    "Daily Trigger": {
+      "main": [
+        [
+          {
+            "node": "Generate Scripts (OpenAI)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Scripts (OpenAI)": {
+      "main": [
+        [
+          {
+            "node": "TTS Audio (ElevenLabs)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "TTS Audio (ElevenLabs)": {
+      "main": [
+        [
+          {
+            "node": "Video Montage (FFmpeg)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Video Montage (FFmpeg)": {
+      "main": [
+        [
+          {
+            "node": "Generate Thumbnail",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Thumbnail": {
+      "main": [
+        [
+          {
+            "node": "Upload to YouTube",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "versionId": "1",
+  "id": "elite-vault-facts",
+  "meta": {
+    "instanceId": "your-instance"
+  },
+  "tags": []
+}
