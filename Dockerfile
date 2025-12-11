@@ -2,9 +2,10 @@ FROM n8nio/n8n:latest
 
 USER root
 
-RUN apt-get update \
-    && apt-get install -y ffmpeg \
-    && rm -rf /var/lib/apt/lists/*
+# Instaliramo ffmpeg u tri odvojena koraka da Render ne poludi
+RUN apt-get update
+RUN apt-get install -y ffmpeg
+RUN rm -rf /var/lib/apt/lists/*
 
 USER node
 
